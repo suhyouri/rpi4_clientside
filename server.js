@@ -17,8 +17,8 @@ app.listen(PORTnum,() => {
 })
 
 app.get("/", (req, res) => {
-	return res.send("hello world");
-})
+  res.sendFile(__dirname + "/index.html");
+});
 
 app.use(express.json())
 
