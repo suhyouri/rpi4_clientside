@@ -9,7 +9,10 @@ const PORT = 3000;
 // const request = require("request");
 const axios = require('axios')
 const https = require('https')
-let api_url = "http://172.30.1.45:5500/gps";
+const publicIp = "111.22.33.44"
+const localIp = "172.30.1.1"
+const serverSidePort = "5500"
+let api_url = `http://${publicIp}:${serverSidePort}/gps`;
 app.use(express.json())
 
 app.listen(PORT,() => {
