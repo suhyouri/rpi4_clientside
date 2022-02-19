@@ -19,6 +19,7 @@
   "homepage": "https://github.com/suhyouri/rpi4_clientside#readme",
   "dependencies": {
     "axios": "^0.26.0",
-    "express": "^4.17.3"
+    "express": "^4.17.3",
+    "serialport": "^10.3.0"
   }
 }
