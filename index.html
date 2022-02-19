@@ -16,11 +16,11 @@
     <script type="text/javascript">
         let socket = io();//io.connect();
 
-        socket.on("lat", function (data) {
+        socket.on("dd.lat", function (data) {
             document.getElementById("dd.lat").textContent = "lat: " + data;
         });
 
-        socket.on("long", function (data) {
+        socket.on("dd.long", function (data) {
             document.getElementById("dd.long").textContent = "long: " + data;
         });
 
