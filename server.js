@@ -1,31 +1,82 @@
 //----> 0. Server Setup
-const express = require("express");
+import express from "express";
 const app = express();
+import { SerialPort } from "serialport";
+import { ReadlineParser } from "@serialport/parser-readline";
+
+import { createServer } from "http"; 
+import { Server } from "socket.io";
+const httpServer = createServer(app);
+const io = new Server(httpServer, {});
+
+import axios from "axios";
+import path from 'path';
+const __dirname = path.resolve();
 const PORTnum = 3000;
-const server = require("http").createServer(app);
 const publicIp = "222.99.193.84"
 const localIp = "172.30.1.45"
 const serverSidePort = "5500"
 let api_url = `http://${publicIp}:${serverSidePort}/gps`;
-const serialPort = require("serialport");
-const Delimiter = require('@serialport/parser-delimiter')
-const Readline = require('@serialport/parser-readline')
-const axios = require('axios')
 
-app.listen(PORTnum,() => {
-	console.log(`it's alive on http://localhost:${PORTnum}`);
+httpServer.listen(PORTnum, () => {
+  console.log(`it's alive on http://localhost:${PORTnum}`);
 })
-
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
 
 app.use(express.json())
 
+app.get("/", (req, res) => {
+  console.log(res);
+  res.sendFile(__dirname + "/index.html");
+});
+
+
+//internet check 
+import ping from "ping";
+const hosts = ['google.com'];
+let internet = false;
+
+function internetCheck() {
+  hosts.forEach(function (host) {
+    ping.promise.probe(host)
+        .then(function (res) {
+          console.log(res.alive);
+          if (res.alive) {
+            internet = true;
+          }
+        });
+});
+}
+
+setInterval(internetCheck, 1000);
+
+//led 
+import Gpio from 'onoff';
+
+const gpio = Gpio.Gpio;
+const led = new gpio(17, 'out');
+
+const timer = setInterval(()=>{
+  if (led.readSync() === 0) { // if current pin state is 0 (off)
+    led.writeSync(1); // make it 1 (on)
+  } else {
+    led.writeSync(0); // make it 0 (off)
+  }
+}, 250);
+
+function switchOff(){
+  clearInterval(timer);
+  led.writeSync(0); // making the gpio 4 off. Will turn LED off
+  led.unexport(); // Unexport GPIO to free resources
+}
+
+if (internet) {
+  setTimeout(switchOff, 10000);
+}
 
 //----> 1. Serialport Setup - MCU & GPS
 // ls -dev raspberry: /dev/ttyAMA0, arduino: /dev/cu.usbmodem143401 , /dev/ttyACM0
-const port = new serialPort("/dev/ttyACM0", {
+const port = new SerialPort({
+  path: "/dev/ttyACM0",
   baudRate: 9600,
   dataBits: 8,
   parity: "none",
@@ -46,7 +97,7 @@ let latDMS_str = "";
 let longDMS_arr = ["", "°", " ", "", "'", " ", "", `"`, ""];
 let longDMS_str = "";
 let finalGPS = "";
-let latSize = 10; //ada 11, neo m8n 10 <--- how to change soft coding?
+let latSize = 11; //ada 11, neo m8n 10 <--- how to change soft coding?
 let longSize = 12; //ada 12, neo m8n 11 <--- how to change soft coding?
 let direction = "";
 let latS = false;
@@ -77,7 +128,7 @@ let GNGGA = {
   },
 };
 
-const parser = port.pipe(new Readline({ delimiter: '\n' })) //\r\n
+const parser = port.pipe(new ReadlineParser({ delimiter: "\n" })); //\r\n
 
 parser.on("data", function (data) {
   // console.log("data: " +data);
@@ -117,7 +168,7 @@ parser.on("data", function (data) {
       latDMS_arr[6] = GNGGA.lat.sec;
 
       latDMS_str = String(latDMS_arr.join(""));
-      console.log("latDMS_str: " + latDMS_str);
+      // console.log("latDMS_str: " + latDMS_str);
       io.emit("dd.lat", dd.lat.lat);
       
     }
@@ -158,12 +209,12 @@ parser.on("data", function (data) {
       longDMS_arr[6] = GNGGA.long.sec;
 
       longDMS_str = String(longDMS_arr.join(""));
-      console.log("longDMS_str: " + longDMS_str);
+      // console.log("longDMS_str: " + longDMS_str);
       io.emit("dd.long", dd.long.long);
 
       //FINAL GNGGA
       finalGPS = latDMS_str + " " + longDMS_str;
-      console.log("finalGPS: " + finalGPS);
+      // console.log("finalGPS: " + finalGPS);
       io.emit("finalGPS", finalGPS);
     }
   } else if (data.length == 2) {
@@ -188,14 +239,14 @@ parser.on("data", function (data) {
   }
 });
 
-io.on("connection", function (client) {
+io.on("connection", client => {
   // -----> Data to send to html
   // io.emit("dd.lat", dd.lat.lat);
   // io.emit("dd.long", dd.long.long);
   // io.emit("finalGPS", finalGPS);
   // -----> 
+  console.log("yay!");
   console.log("user connected");
-
   client.on("disconnect", () => {
     console.log("user disconnected");
   });
@@ -215,12 +266,14 @@ function posting() {
   .then(res => {
     console.log(`statusCode: ${res.status}`)
 	//   console.log(res)
-    console.log(gpsData.lat);
-    console.log(gpsData.long);
-    console.log(gpsData.gpsdms);
+    // console.log(gpsData.lat);
+    // console.log(gpsData.long);
+    // console.log(gpsData.gpsdms);
   })
   .catch(error => {
     console.error(error)
   })
 }
 setInterval(posting, 1000);
+
+// console.log(SerialPort);

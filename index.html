@@ -8,13 +8,13 @@
 </head>
 <body>
     <h1>~GPS Value Posting~</h1>
-    <p id="dd.lat"> lat from SP: </p>
-    <p id="dd.long"> long from SP: </p>
+    <p id="dd.lat"> lat: </p>
+    <p id="dd.long"> long: </p>
     <p id="finalGPS"> GPS: </p>
     
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript">
-        let socket = io();//io.connect();
+        let socket = io();
 
         socket.on("dd.lat", function (data) {
             document.getElementById("dd.lat").textContent = "lat: " + data;
