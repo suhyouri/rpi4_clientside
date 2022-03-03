@@ -10,10 +10,9 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {});
 
 import axios from "axios";
-import path from 'path';
-const __dirname = path.resolve();
+
 const PORTnum = 3000;
-const publicIp = "222.99.193.84"
+const publicIp = "121.169.170.150"
 const localIp = "172.30.1.45"
 const serverSidePort = "5500"
 let api_url = `http://${publicIp}:${serverSidePort}/gps`;
@@ -22,13 +21,15 @@ httpServer.listen(PORTnum, () => {
   console.log(`it's alive on http://localhost:${PORTnum}`);
 })
 
-app.use(express.json())
+app.use(express.json());
+
+import path from 'path';
+const __dirname = path.resolve();
 
 app.get("/", (req, res) => {
-  console.log(res);
-  res.sendFile(__dirname + "/index.html");
+  // console.log(res);
+  res.sendFile(path.join(__dirname + "/index.html"));
 });
-
 
 //internet check 
 import ping from "ping";
@@ -39,7 +40,7 @@ function internetCheck() {
   hosts.forEach(function (host) {
     ping.promise.probe(host)
         .then(function (res) {
-          console.log(res.alive);
+          // console.log(res.alive);
           if (res.alive) {
             internet = true;
           }
@@ -85,7 +86,7 @@ const port = new SerialPort({
 });
 
 port.on("connection",function(){
-  console.log("port on!")
+  console.log("port on!");
 })
 
 
@@ -170,6 +171,7 @@ parser.on("data", function (data) {
       latDMS_str = String(latDMS_arr.join(""));
       // console.log("latDMS_str: " + latDMS_str);
       io.emit("dd.lat", dd.lat.lat);
+      gpsData.lat = dd.lat.lat;
       
     }
   } else if (data.length == longSize) {
@@ -211,11 +213,17 @@ parser.on("data", function (data) {
       longDMS_str = String(longDMS_arr.join(""));
       // console.log("longDMS_str: " + longDMS_str);
       io.emit("dd.long", dd.long.long);
+      gpsData.long = dd.long.long;
 
       //FINAL GNGGA
       finalGPS = latDMS_str + " " + longDMS_str;
       // console.log("finalGPS: " + finalGPS);
       io.emit("finalGPS", finalGPS);
+      gpsData.gpsdms = finalGPS;
+
+      // console.log("gpsData.lat: " + gpsData.lat);
+      // console.log("gpsData.long: " + gpsData.long); 
+      // console.log("gpsData.dms: "+ gpsData.gpsdms);
     }
   } else if (data.length == 2) {
     direction = data;
@@ -232,14 +240,15 @@ parser.on("data", function (data) {
       longDMS_arr[8] = direction.trim();
       longW = true;
     } else {
-      console.log("NSEW X");
+      // console.log("NSEW X");
     }
   } else {
-    console.log(" : ) ");
+    // console.log(" : ) ");
   }
 });
 
 io.on("connection", client => {
+  
   // -----> Data to send to html
   // io.emit("dd.lat", dd.lat.lat);
   // io.emit("dd.long", dd.long.long);
@@ -264,14 +273,15 @@ function posting() {
 	axios
   .post(api_url, gpsData)
   .then(res => {
-    console.log(`statusCode: ${res.status}`)
-	//   console.log(res)
-    // console.log(gpsData.lat);
-    // console.log(gpsData.long);
-    // console.log(gpsData.gpsdms);
+    // console.log(`statusCode: ${res.status}`)
+	  // console.log(res)
+    // check
+    console.log("gpsData.lat: " + gpsData.lat);
+    console.log("gpsData.long: " + gpsData.long);
+    console.log("gpsData.dms: "+gpsData.gpsdms);
   })
   .catch(error => {
-    console.error(error)
+    // console.error(error)
   })
 }
 setInterval(posting, 1000);
